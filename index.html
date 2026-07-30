@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Исследовательский Цифровой Советчик СПО: Анодная Масса Содерберга</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="brand">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Исследовательский Цифровой Советчик СПО</h1>
+                    <p class="subtitle">Лабораторно-промышленная модель производства анодной массы Содерберга • ВАМИ-Sørlie Model v6.0</p>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <div class="preset-selector-group">
+                    <label for="pasteTypeSelect">Режим массы по схеме:</label>
+                    <select id="pasteTypeSelect" class="preset-dropdown">
+                        <option value="main_paste">Основная анодная масса (База 28.0%)</option>
+                        <option value="pin_paste">Подштыревая анодная масса (База 31.0%)</option>
+                    </select>
+                </div>
+
+                <div class="preset-selector-group">
+                    <label for="presetSelect">Пресет сырья:</label>
+                    <select id="presetSelect" class="preset-dropdown">
+                        <option value="standard">Стандартный (Нефтяной кокс + СТП)</option>
+                        <option value="high_porosity">Высокопористый кокс (Импорт)</option>
+                        <option value="ecoanode">Сухая масса «ЭКОАНОД» (Низкий пек)</option>
+                        <option value="anode_butt">Смесь с анодным огарком (25%)</option>
+                        <option value="high_dust">Аномальный (Высокая пылевая фракция)</option>
+                        <option value="high_softening">Высокотемпературный пек (R&B 115°C)</option>
+                    </select>
+                </div>
+                
+                <button id="openFormulaEditorBtn" class="btn btn-secondary highlight-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Редактор формул
+                </button>
+
+                <button id="exportReportBtn" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Источники и отчет
+                </button>
+            </div>
+        </header>
+
+        <!-- Notification Banner / Alert Summary -->
+        <div id="advisorAlertBanner" class="alert-banner alert-warning">
+            <div class="alert-icon">⚡</div>
+            <div class="alert-content">
+                <h3 id="alertTitle">Верификация математической модели...</h3>
+                <p id="alertDescription">Идет пересчет физико-химических балансов и зависимостей...</p>
+            </div>
+            <div class="alert-badge" id="alertSeverityBadge">В НОРМЕ</div>
+        </div>
+
+        <!-- Main Content Layout Grid -->
+        <main class="dashboard-grid">
+            
+            <!-- Left Column: Raw Materials & Equipment Inputs -->
+            <section class="input-panel">
+                <div class="panel-header">
+                    <h2>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        1. Входной контроль сырья и передела прокалки
+                    </h2>
+                </div>
+
+                <!-- Input Card: Calcination Kiln & Coke -->
+                <div class="input-card">
+                    <div class="card-title">
+                        <span class="icon">🔥</span> Прокалочная печь и Кокс (По схеме)
+                        <span class="info-tooltip" data-tooltip="cokeCalcinationInfo">?</span>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Температура прокалки T<sub>прокалки</sub> (°C) <span class="info-btn" data-tooltip="tempCalcInfo">?</span></label>
+                            <input type="number" id="tempCalcination" step="5" min="1150" max="1400" value="1280">
+                            <span class="hint">Норма по схеме: 1200–1320 °C</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Виброобъемная плотность ВОП (г/см³) <span class="info-btn" data-tooltip="vbdInfo">?</span></label>
+                            <input type="number" id="cokeVbd" step="0.01" min="0.70" max="0.98" value="0.84">
+                            <span class="hint">Критерий схемы: ВОП &gt; 0.82 г/см³</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Истинная плотность &rho;<sub>real</sub> (г/см³) <span class="info-btn" data-tooltip="realDensityInfo">?</span></label>
+                            <input type="number" id="cokeRealDensity" step="0.01" min="2.00" max="2.18" value="2.08">
+                            <span class="hint">Норма: 2.06–2.12 г/см³</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Впитываемость пека / Пористость (%) <span class="info-btn" data-tooltip="porosityInfo">?</span></label>
+                            <input type="number" id="cokePorosity" step="0.5" min="12" max="32" value="21">
+                            <span class="hint">Поглощение пека порам кокса</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Зольность А (%) <span class="info-btn" data-tooltip="ashInfo">?</span></label>
+                            <input type="number" id="cokeAsh" step="0.05" min="0.1" max="1.5" value="0.35">
+                            <span class="hint">Макс. 0.5% для высшего сорта</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Доля огарка в шихте (%) <span class="info-btn" data-tooltip="buttInfo">?</span></label>
+                            <input type="number" id="anodeButtRatio" step="1" min="0" max="45" value="15">
+                            <span class="hint">Вторичный обоженный анод</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Card: Pitch -->
+                <div class="input-card">
+                    <div class="card-title">
+                        <span class="icon">🛢️</span> Связующее (Каменноугольный пек)
+                        <span class="info-tooltip" data-tooltip="pitchGeneralInfo">?</span>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Темп. размягчения КиШ T<sub>R&amp;B</sub> (°C) <span class="info-btn" data-tooltip="pitchSofteningInfo">?</span></label>
+                            <input type="number" id="pitchSoftening" step="0.5" min="80" max="130" value="103">
+                            <span class="hint">СТП: 85-105°C | ВТП: 108-120°C</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Выход коксового остатка (%) <span class="info-btn" data-tooltip="pitchCokingInfo">?</span></label>
+                            <input type="number" id="pitchCokingValue" step="0.5" min="50" max="68" value="57.5">
+                            <span class="hint">Влияет на спекание анода</span>
+                        </div>
+                        <div class="form-group">
+                            <label>&alpha;-фракция (QI, %) <span class="info-btn" data-tooltip="pitchAlphaInfo">?</span></label>
+                            <input type="number" id="pitchAlpha" step="0.5" min="4" max="18" value="9.5">
+                            <span class="hint">Хинолин-нерастворимые</span>
+                        </div>
+                        <div class="form-group">
+                            <label>&beta;-фракция (%) <span class="info-btn" data-tooltip="pitchBetaInfo">?</span></label>
+                            <input type="number" id="pitchBeta" step="0.5" min="16" max="28" value="20.5">
+                            <span class="hint">Связующая способность</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Card: 4-Fraction Boundaries Adjustment -->
+                <div class="input-card">
+                    <div class="card-title">
+                        <span class="icon">📏</span> Настройка границ 4-х фракций рассева (мм)
+                        <span class="info-tooltip" data-tooltip="fractionFourBoundsInfo">?</span>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Крупная 1: D<sub>max</sub> (мм) <span class="info-btn" data-tooltip="dMaxInfo">?</span></label>
+                            <input type="number" id="dC1Max" step="0.5" min="6.0" max="15.0" value="10.0">
+                            <span class="hint">Верхняя граница Крупной 1</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Крупная 1: d<sub>min1</sub> / Крупная 2: d<sub>max2</sub> (мм) <span class="info-btn" data-tooltip="dC1MinInfo">?</span></label>
+                            <input type="number" id="dC1Min" step="0.5" min="2.5" max="6.0" value="4.0">
+                            <span class="hint">Граница между Крупной 1 и 2</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Крупная 2: d<sub>min2</sub> / Мелкая: d<sub>max3</sub> (мм) <span class="info-btn" data-tooltip="dC2MinInfo">?</span></label>
+                            <input type="number" id="dC2Min" step="0.1" min="0.5" max="2.0" value="1.0">
+                            <span class="hint">Граница между Средней и Мелкой</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Пыль: d<sub>dust</sub> (мм) <span class="info-btn" data-tooltip="dDustInfo">?</span></label>
+                            <input type="number" id="dDust" step="0.005" min="0.040" max="0.125" value="0.071">
+                            <span class="hint">Граница тонкого помола мельницы</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-card">
+                    <div class="card-title">
+                        <span class="icon">📊</span> Соотношение фракций по 4 сортовым бункерам (%)
+                        <span class="info-tooltip" data-tooltip="sieveProportionsInfo">?</span>
+                    </div>
+                    <div class="sieve-controls">
+                        <div class="sieve-row">
+                            <label><span id="labelCoarse1">Крупная 1 (4.0 – 10.0 мм)</span> <span class="info-btn" data-tooltip="fracCoarseInfo">?</span></label>
+                            <input type="range" id="fracCoarse" min="5" max="30" value="15" step="1">
+                            <span id="fracCoarseVal" class="sieve-val">15%</span>
+                        </div>
+                        <div class="sieve-row">
+                            <label><span id="labelCoarse2">Крупная 2 / Средняя (1.0 – 4.0 мм)</span> <span class="info-btn" data-tooltip="fracMediumInfo">?</span></label>
+                            <input type="range" id="fracMedium" min="15" max="45" value="28" step="1">
+                            <span id="fracMediumVal" class="sieve-val">28%</span>
+                        </div>
+                        <div class="sieve-row">
+                            <label><span id="labelFine">Мелкая / Огарок (0.071 – 1.0 мм)</span> <span class="info-btn" data-tooltip="fracFineInfo">?</span></label>
+                            <input type="range" id="fracFine" min="10" max="35" value="18" step="1">
+                            <span id="fracFineVal" class="sieve-val">18%</span>
+                        </div>
+                        <div class="sieve-row highlight">
+                            <label><span id="labelDust">Пылевая фракция (&lt; 0.071 мм)</span> <span class="info-btn" data-tooltip="fracDustInfo">?</span></label>
+                            <input type="range" id="fracDust" min="25" max="55" value="39" step="1">
+                            <span id="fracDustVal" class="sieve-val">39%</span>
+                        </div>
+                        <div class="sieve-summary">
+                            <span>Сумма шихты: <strong id="fracTotalVal">100%</strong></span>
+                            <span>Удельная поверхность пыли S<sub>sp</sub>: <strong id="dustSurfaceVal">3450 см²/г</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Equipment & Dosing Regimes -->
+                <div class="panel-header" style="margin-top: 1.5rem;">
+                    <h2>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                        </svg>
+                        2. Режимы оборудования и весовых дозаторов
+                    </h2>
+                </div>
+
+                <div class="input-card">
+                    <div class="card-title">
+                        <span class="icon">⚖️</span> Весовые дозаторы сортовых бункеров (по схеме)
+                        <span class="info-tooltip" data-tooltip="feedersGeneralInfo">?</span>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Заданная дозировка пека W<sub>пек</sub> (wt %) [Шаг 0.1%] <span class="info-btn" data-tooltip="presetPitchInfo">?</span></label>
+                            <input type="number" id="presetPitchRatio" step="0.1" min="22.0" max="35.0" value="28.5">
+                            <span class="hint">Уставка дозатора пека (шаг 0.1%)</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Нагрузка СПО (т/ч) <span class="info-btn" data-tooltip="throughputInfo">?</span></label>
+                            <input type="number" id="lineThroughput" step="1" min="10" max="60" value="25">
+                            <span class="hint">Суммарный расход массы</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Погрешность дозатора кокса (%) <span class="info-btn" data-tooltip="errCokeInfo">?</span></label>
+                            <input type="number" id="feederErrCoke" step="0.1" min="0.1" max="2.0" value="0.4">
+                            <span class="hint">Класс точности дозатора</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Погрешность дозатора пека (%) <span class="info-btn" data-tooltip="errPitchInfo">?</span></label>
+                            <input type="number" id="feederErrPitch" step="0.1" min="0.1" max="2.0" value="0.3">
+                            <span class="hint">Погрешность расходомера</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-card">
+                    <div class="card-title">
+                        <span class="icon">🔥</span> Температурный режим установок СПО (°C)
+                        <span class="info-tooltip" data-tooltip="thermalRegimesInfo">?</span>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Подогреватель шихты (сухого кокса) T<sub>кокс</sub> <span class="info-btn" data-tooltip="tempCokeInfo">?</span></label>
+                            <input type="number" id="tempCokePreheat" step="1" min="140" max="220" value="200">
+                            <span class="hint">Уставка по схеме: 195–205 °C</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Температура жидкого пека T<sub>пек</sub> <span class="info-btn" data-tooltip="tempPitchInfo">?</span></label>
+                            <input type="number" id="tempPitchLiquid" step="1" min="140" max="220" value="170">
+                            <span class="hint">Пекоприемник КУП/НТП</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Смеситель непрерывный T<sub>смеси</sub> <span class="info-btn" data-tooltip="tempMixerInfo">?</span></label>
+                            <input type="number" id="tempMixer" step="1" min="140" max="220" value="195">
+                            <span class="hint">Уставка по схеме: 190–205 °C</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Время смешивания (мин) <span class="info-btn" data-tooltip="mixerTimeInfo">?</span></label>
+                            <input type="number" id="mixerTime" step="1" min="5" max="45" value="35">
+                            <span class="hint">Продолжительность контакта</span>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Right Column: Digital Advisor Output & Visualizations -->
+            <section class="output-panel">
+                
+                <!-- Section 3: Advisor Recommendations Cards -->
+                <div class="panel-header">
+                    <h2>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        3. Рекомендации Советчика и Балансовые Расчеты
+                    </h2>
+                </div>
+
+                <div class="recommendations-grid">
+                    <!-- Recommendation 1: Pitch Dosage -->
+                    <div class="rec-card" id="cardPitchRec">
+                        <div class="rec-header">
+                            <span class="rec-type">ДОЗИРОВАНИЕ СВЯЗУЮЩЕГО (СХЕМА СПО)</span>
+                            <span class="rec-status-badge" id="badgePitchStatus">ТРЕБУЕТСЯ КОРРЕКЦИЯ</span>
+                        </div>
+                        <div class="rec-body">
+                            <div class="metric-comparison">
+                                <div class="metric-box current">
+                                    <span class="label">Уставка дозатора</span>
+                                    <span class="val" id="valCurrentPitch">28.5%</span>
+                                </div>
+                                <div class="arrow">➔</div>
+                                <div class="metric-box target">
+                                    <span class="label">Советчик предлагает</span>
+                                    <span class="val" id="valAdvisedPitch">27.2%</span>
+                                </div>
+                            </div>
+                            <p class="rec-text" id="textPitchAdvice">
+                                Загрузка...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation 2: Mixer Temperature -->
+                    <div class="rec-card" id="cardTempRec">
+                        <div class="rec-header">
+                            <span class="rec-type">ТЕМПЕРАТУРНЫЙ РЕЖИМ СМЕСИТЕЛЯ</span>
+                            <span class="rec-status-badge" id="badgeTempStatus">ОПТИМАЛЬНО</span>
+                        </div>
+                        <div class="rec-body">
+                            <div class="metric-comparison">
+                                <div class="metric-box current">
+                                    <span class="label">Факт смесителя</span>
+                                    <span class="val" id="valCurrentMixerT">195°C</span>
+                                </div>
+                                <div class="arrow">➔</div>
+                                <div class="metric-box target">
+                                    <span class="label">Цель по схеме T<sub>опт</sub></span>
+                                    <span class="val" id="valAdvisedMixerT">195°C</span>
+                                </div>
+                            </div>
+                            <p class="rec-text" id="textTempAdvice">
+                                Загрузка...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation 3: Sieve Optimization -->
+                    <div class="rec-card" id="cardSieveRec">
+                        <div class="rec-header">
+                            <span class="rec-type">УПАКОВКА ЧАСТИЦ (ФУЛЛЕР D<sub>max</sub>=<span id="recDmax">10.0</span>мм)</span>
+                            <span class="rec-status-badge" id="badgeSieveStatus">ОПТИМАЛЬНО</span>
+                        </div>
+                        <div class="rec-body">
+                            <div class="packing-efficiency">
+                                <div class="eff-bar-bg">
+                                    <div class="eff-bar-fill" id="packingEffBar" style="width: 92%;"></div>
+                                </div>
+                                <span class="eff-text">Плотность упаковки шихты: <strong id="packingEffVal">92.4%</strong> от идеала</span>
+                            </div>
+                            <p class="rec-text" id="textSieveAdvice">
+                                Загрузка...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Anode Quality Predictive Metrics -->
+                <div class="panel-header" style="margin-top: 1.5rem;">
+                    <h2>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                        4. Прогноз качественных показателей анода (С подсказками и формулами)
+                    </h2>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon">💧</div>
+                        <div class="kpi-content">
+                            <div class="kpi-title-row">
+                                <span class="kpi-title">Текучесть по Эйхлеру (150°C)</span>
+                                <span class="info-btn" data-tooltip="kpiFluidityFormula">?</span>
+                            </div>
+                            <span class="kpi-value" id="kpiFluidity">2.1</span>
+                            <span class="kpi-status good" id="kpiFluidityStatus">Норма (1.6 - 2.8)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon">🏋️</div>
+                        <div class="kpi-content">
+                            <div class="kpi-title-row">
+                                <span class="kpi-title">Кажущаяся плотность обоженного</span>
+                                <span class="info-btn" data-tooltip="kpiBakedDensityFormula">?</span>
+                            </div>
+                            <span class="kpi-value" id="kpiBakedDensity">1.52 <small>г/см³</small></span>
+                            <span class="kpi-status good" id="kpiBakedDensityStatus">Отлично (&gt; 1.48)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon">⚡</div>
+                        <div class="kpi-content">
+                            <div class="kpi-title-row">
+                                <span class="kpi-title">Удельное элек. сопротивление (УЭС)</span>
+                                <span class="info-btn" data-tooltip="kpiResistivityFormula">?</span>
+                            </div>
+                            <span class="kpi-value" id="kpiResistivity">58.4 <small>Ом·мм²/м</small></span>
+                            <span class="kpi-status good" id="kpiResistivityStatus">Низкие потери (&lt; 62 по схеме)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon">🧱</div>
+                        <div class="kpi-content">
+                            <div class="kpi-title-row">
+                                <span class="kpi-title">Прочность на сжатие</span>
+                                <span class="info-btn" data-tooltip="kpiStrengthFormula">?</span>
+                            </div>
+                            <span class="kpi-value" id="kpiStrength">38.2 <small>МПа</small></span>
+                            <span class="kpi-status good" id="kpiStrengthStatus">Высокая (&gt; 32)</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon">💨</div>
+                        <div class="kpi-content">
+                            <div class="kpi-title-row">
+                                <span class="kpi-title">Осыпаемость в CO₂ и O₂</span>
+                                <span class="info-btn" data-tooltip="kpiDustingFormula">?</span>
+                            </div>
+                            <span class="kpi-value" id="kpiDusting">4.2 <small>% потерь</small></span>
+                            <span class="kpi-status good" id="kpiDustingStatus">Малый угольный шум</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon">🌿</div>
+                        <div class="kpi-content">
+                            <div class="kpi-title-row">
+                                <span class="kpi-title">Удельный выхлоп ПАУ</span>
+                                <span class="info-btn" data-tooltip="kpiPahFormula">?</span>
+                            </div>
+                            <span class="kpi-value" id="kpiPahEmissions">0.42 <small>кг/т Al</small></span>
+                            <span class="kpi-status good" id="kpiPahStatus">Экологично</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Charts & Process Visualizer -->
+                <div class="panel-header" style="margin-top: 1.5rem;">
+                    <h2>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                        5. Интерактивная схема процесса и графики
+                    </h2>
+                </div>
+
+                <div class="visualizer-container">
+                    <div class="viz-header">
+                        <h3>Схема спекания Содерберговского анода в электролизере в режиме реального времени</h3>
+                        <div class="temp-legend">
+                            <span class="leg-item"><span class="color-box" style="background:#3b82f6;"></span> Жидкая масса (130-170°C)</span>
+                            <span class="leg-item"><span class="color-box" style="background:#f59e0b;"></span> Зона пиролиза (400-600°C)</span>
+                            <span class="leg-item"><span class="color-box" style="background:#ef4444;"></span> Обоженный анод (950°C)</span>
+                        </div>
+                    </div>
+                    <canvas id="soderbergPotCanvas" height="260"></canvas>
+                </div>
+
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <h3>Динамическая кривая упаковочной плотности Фуллера (4 фракции)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="fullerChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Зависимость текучести массы от температуры смесителя</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="rheologyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- Live Formula Editor & Coefficient Tuning Modal -->
+    <div id="formulaEditorModal" class="modal-overlay hidden">
+        <div class="modal-content formula-editor-modal">
+            <div class="modal-header">
+                <h2>Интерактивный редактор формул и эмпирических коэффициентов</h2>
+                <button id="closeFormulaEditorBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="formulaEditorModalBody">
+                <!-- Formula tuning cards injected dynamically via JS -->
+            </div>
+            <div class="modal-footer">
+                <button id="resetAllFormulasBtn" class="btn btn-secondary">Восстановить ВСЕ формулы</button>
+                <button id="applyFormulasBtn" class="btn btn-primary">Применить и Пересчитать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Research Tooltip Popup Modal with Source Links & Reset Button -->
+    <div id="tooltipModal" class="modal-overlay hidden">
+        <div class="modal-content tooltip-modal-content">
+            <div class="modal-header">
+                <h2 id="tooltipModalTitle">Параметр, математическая формула и первоисточник</h2>
+                <button id="closeTooltipBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="tooltipModalBody">
+                <!-- Tooltip Content injected via JS -->
+            </div>
+            <div class="modal-footer">
+                <button id="resetSingleFormulaBtn" class="btn btn-secondary">Восстановить исходную формулу</button>
+                <button id="dismissTooltipBtn" class="btn btn-primary">Понятно</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Printable Engineering Report & Mathematical Verification -->
+    <div id="reportModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Исследовательский отчет, литературные источники и формулы</h2>
+                <button id="closeModalBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="printableReportArea">
+                <!-- Dynamic Report Content -->
+            </div>
+            <div class="modal-footer">
+                <button onclick="window.print()" class="btn btn-primary">Распечатать / Сохранить в PDF</button>
+                <button id="dismissModalBtn" class="btn btn-secondary">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
