@@ -17,6 +17,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Test Suite (Physics, Tooltips & Model Presets)
+        run: node test_engine.js
+
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:

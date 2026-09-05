@@ -152,6 +152,13 @@ body {
     background: rgba(6, 182, 212, 0.15);
 }
 
+.btn-xs {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.725rem;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
 /* Alert Banner */
 .alert-banner {
     display: flex;
@@ -349,9 +356,22 @@ body {
 .sieve-summary {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 0.8rem;
     padding-top: 0.5rem;
     border-top: 1px solid var(--card-border);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sieve-sum-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sieve-val.error, #fracTotalVal.error {
+    color: var(--accent-red);
 }
 
 /* Recommendations Grid */
@@ -421,6 +441,14 @@ body {
 
 .metric-box.target .val {
     color: var(--accent-cyan);
+}
+
+.metric-box .val-sub {
+    font-size: 0.725rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-top: 1px;
 }
 
 .arrow {
@@ -728,4 +756,215 @@ body {
     padding: 10px;
     border-radius: 6px;
     color: var(--accent-orange);
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .recommendations-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .kpi-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .charts-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 0.75rem;
+    }
+
+    .main-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .header-controls {
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .preset-dropdown {
+        width: 100%;
+    }
+
+    .preset-selector-group {
+        width: 100%;
+    }
+
+    .recommendations-grid,
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 96%;
+        max-height: 92vh;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 560px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .temp-legend {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .brand h1 {
+        font-size: 1.15rem;
+    }
+}
+
+/* ==========================================================================
+   Print / PDF Export Styles
+   ========================================================================== */
+
+@media print {
+    *,
+    *::before,
+    *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #111827 !important;
+        padding: 0 !important;
+        font-size: 11pt;
+    }
+
+    /* Hide interactive UI elements during report print */
+    .main-header,
+    .input-panel,
+    .header-controls,
+    .modal-footer,
+    .close-btn,
+    .alert-banner,
+    .charts-row,
+    .visualizer-container,
+    .btn,
+    .info-btn,
+    .info-tooltip {
+        display: none !important;
+    }
+
+    .app-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* Print modal report content nicely */
+    .modal-overlay {
+        position: static !important;
+        background: none !important;
+        backdrop-filter: none !important;
+        display: block !important;
+        padding: 0 !important;
+        z-index: auto !important;
+    }
+
+    .modal-content {
+        background: #ffffff !important;
+        color: #111827 !important;
+        border: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .modal-header {
+        border-bottom: 2px solid #1e293b !important;
+        padding: 0 0 12pt 0 !important;
+        margin-bottom: 12pt !important;
+    }
+
+    .modal-header h2 {
+        font-size: 16pt !important;
+        color: #0f172a !important;
+    }
+
+    .modal-body {
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    .report-section {
+        margin-bottom: 16pt !important;
+        page-break-inside: avoid;
+    }
+
+    .report-section h3 {
+        font-size: 13pt !important;
+        color: #0f172a !important;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 4pt;
+        margin-bottom: 8pt;
+    }
+
+    .formula-tune-card,
+    .rec-card,
+    .kpi-card {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #111827 !important;
+        page-break-inside: avoid;
+        margin-bottom: 10pt !important;
+    }
+
+    .formula-expr,
+    .formula-block {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 9.5pt !important;
+    }
+
+    .var-tag {
+        background: #e2e8f0 !important;
+        border-color: #cbd5e1 !important;
+        color: #1e293b !important;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 6pt 8pt !important;
+        color: #111827 !important;
+    }
+
+    th {
+        background-color: #f1f5f9 !important;
+    }
 }
