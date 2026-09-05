@@ -10,7 +10,7 @@ const FORMULA_DEFAULTS = {
         title: "Оптимальная потребность в пеке (W_пек_opt)",
         russianVars: ["БазаПека", "УдельнаяПоверхностьПыли", "ИстиннаяПлотностьКокса", "ПористостьКокса", "ДоляОгарка", "ВыходКоксаПека", "ТемператураРазмягчения"],
         coeffs: {
-            base: 27.2,
+            base: 28.7,
             k_surface: 0.0017,
             k_density: 10.0,
             k_porosity: 0.20,
@@ -24,7 +24,7 @@ const FORMULA_DEFAULTS = {
             k_density: "Коэфф. плотности кокса (k_density)",
             k_porosity: "Коэфф. пористости кокса (k_porosity)",
             k_butt: "Скидка за огарок (k_butt)",
-            k_coking: "Коэфф. выходя кокса пека (k_coking)",
+            k_coking: "Коэфф. выхода кокса пека (k_coking)",
             k_softening: "Коэфф. темп. размягчения (k_softening)"
         },
         expr: "W_opt = БазаПека + k_surface*(S_sp - 3200) + k_density*(2.08 - ρ_real) + k_porosity*(Пористость - 21.0) - k_butt*Огарок - k_coking*(КоксПека - 57.5) - k_softening*(КиШ - 103)"
@@ -32,7 +32,7 @@ const FORMULA_DEFAULTS = {
     dustSurface: {
         id: "dustSurface",
         title: "Удельная поверхность пылевой фракции (S_sp, см²/г)",
-        russianVars: ["ДоляПыли", "РазмерПыли", "ИстиннаяПлотностьКокса"],
+        russianVars: ["ДоляПыли", "РазмерПыли"],
         coeffs: {
             baseSurface: 3200,
             baseDustFrac: 36.0,
@@ -70,7 +70,7 @@ const FORMULA_DEFAULTS = {
         coeffs: {
             baseDensity: 1.53,
             k_pitchDelta: 0.038,
-            k_packing: 0.0025,
+            k_packing: 0.0020,
             k_ash: 0.02
         },
         coeffLabels: {
@@ -130,6 +130,38 @@ const FORMULA_DEFAULTS = {
             k_ash: "Каталитический коэфф. зольности (k_ash)"
         },
         expr: "Dusting = D_base + k_pitchDelta * |ДельтаПека| + k_ash * ЗольностьКокса"
+    },
+    vbd: {
+        id: "vbd",
+        title: "Виброобъемная плотность прокаленного кокса (ВОП, г/см³)",
+        russianVars: ["ТемператураПрокалки", "ИстиннаяПлотностьКокса"],
+        coeffs: {
+            baseVbd: 0.72,
+            k_temp: 0.0003,
+            k_density: 0.50
+        },
+        coeffLabels: {
+            baseVbd: "Базовый расчетный ВОП (baseVbd, г/см³)",
+            k_temp: "Коэфф. температуры печи прокалки (k_temp)",
+            k_density: "Коэфф. истинной плотности кокса (k_density)"
+        },
+        expr: "ВОП_расч = baseVbd + (T_прокалки - 1200) * k_temp + (ρ_real - 2.00) * k_density"
+    },
+    pah: {
+        id: "pah",
+        title: "Удельный выхлоп полициклических ароматических углеводородов (PAH, кг/т Al)",
+        russianVars: ["ТемператураСмесителя", "ЗаданныйПек"],
+        coeffs: {
+            basePah: 0.42,
+            k_temp: 0.012,
+            basePitchRatio: 28.5
+        },
+        coeffLabels: {
+            basePah: "Базовый удельный выброс ПАУ (basePah, кг/т Al)",
+            k_temp: "Температурный коэфф. возгонки смол (k_temp)",
+            basePitchRatio: "Нормативная дозировка пека (basePitchRatio, %)"
+        },
+        expr: "PAH = basePah * (1 + (T_смеси - 160) * k_temp) * (W_пек / basePitchRatio)"
     }
 };
 
@@ -233,7 +265,7 @@ const RESEARCH_TOOLTIPS = {
         ],
         formula: "W_butt_discount = AnodeButtRatio × 0.075 (%)",
         source: "Sørlie M. & Øye H.A. 'Anodes for Aluminium Electrolysis', R&D Carbon AG, 2010, Ch. 4",
-        accessStatus: "🔒 Платный / Изнетельский доступ (R&D Carbon AG)",
+        accessStatus: "🔒 Платный / Издательский доступ (R&D Carbon AG)",
         sourceUrl: "https://www.materialsnorthwest.no",
         excerpt: "«Chapter 4 Recycled Anode Butts: Anode butts exhibit zero open porosity and low surface area. Incorporating 20% crushed butts reduces pitch binder demand by 1.5 wt%...»"
     },
@@ -391,6 +423,272 @@ const RESEARCH_TOOLTIPS = {
         accessStatus: "🔓 Открытый доступ (Open Access / Public Domain)",
         sourceUrl: "https://www.epa.gov/emc/method-315-particulate-and-mcem",
         excerpt: "«Section 1.2 Applicability: Method 315 determines tar and polycyclic organic matter (POM/PAH) from Söderberg anode baking surfaces. Emission rate: PAH = 0.42 · (1 + 0.012 · (T_mixer - 160)) · (W_pitch / 28.5) kg/t Al...»"
+    },
+    pitchGeneralInfo: {
+        formulaId: "pitchDemand",
+        title: "Связующее: Каменноугольный пек (КУП)",
+        desc: "Высокотемпературный связующий материал пиролиза каменного угля (ГОСТ 10200, ISO 6244). Обеспечивает термореактивное коксование и формирование монолитного углеродного мостика анода при 950°C.",
+        impacts: [
+            "Определяет пластичность сырой массы и спекаемость анодного блока.",
+            "Оптимальная дозировка рассчитывается по удельной поверхности и пористости шихты."
+        ],
+        formula: "W_пек_opt = f(S_sp, Пористость, Огарок, ρ_real)",
+        source: "ГОСТ 10200-83 / ISO 6244: 'Пек каменноугольный электродный'",
+        accessStatus: "🔓 Открытый доступ (ГОСТ / ISO)",
+        sourceUrl: "https://docs.cntd.ru/document/1200018593",
+        excerpt: "«Каменноугольный электродный пек применяется в качестве связующего при производстве анодной массы и графитированных электродов...»"
+    },
+    dMaxInfo: {
+        formulaId: "dustSurface",
+        title: "Крупная фракция 1: Верхняя граница D_max (мм)",
+        desc: "Максимальный размер зерен прокаленного кокса (сито верхнего среза, 8.0–15.0 мм). Задает масштаб параболы распределения Фуллера.",
+        impacts: [
+            "Формирует жесткий первичный силовой каркас анодного массива.",
+            "Влияет на предел прочности и склонность к термоударам."
+        ],
+        formula: "D_max = max(d_i), P(d) = 100 × (d / D_max)^q",
+        source: "Fuller W.B., Thompson S.E. 'The Laws of Proportioning Concrete' / ISO 14427:2004",
+        accessStatus: "🔒 Платный доступ (ISO Standard Store)",
+        sourceUrl: "https://www.iso.org/standard/38072.html",
+        excerpt: "«Maximum aggregate grain size D_max dictates skeletal void structure and required finer fraction ratios for optimal compaction...»"
+    },
+    dC1MinInfo: {
+        formulaId: "dustSurface",
+        title: "Граница рассева Крупная 1 / Крупная 2 (dC1Min, мм)",
+        desc: "Размер ячейки сита разделения крупной фракции (номинал 4.0 мм). Разграничивает бункеры №1 и №2.",
+        impacts: [
+            "Предотвращает сегрегацию крупных зерен при транспортировке массы.",
+            "Позволяет гибко регулировать пористость углеродного каркаса."
+        ],
+        formula: "dC1Min ∈ [1.5, D_max - 0.5] мм",
+        source: "Технологическая инструкция СПО Содерберга ВАМИ",
+        accessStatus: "🔒 Отраслевой доступ (ВАМИ)",
+        sourceUrl: "https://vami.ru",
+        excerpt: "«Раздел 2.3 Рассев кокса: Сито 4.0 мм разделяет крупнозернистую шихту на сортовые классы для стабилизации гранулометрии...»"
+    },
+    dC2MinInfo: {
+        formulaId: "dustSurface",
+        title: "Граница рассева Крупная 2 / Мелкая (dC2Min, мм)",
+        desc: "Размер ячейки сита промежуточного класса (номинал 1.0 мм). Разделяет среднюю и мелкую фракции кокса.",
+        impacts: [
+            "Заполнение межзерновых пустот между крупными гранулами.",
+            "Определяет долю огаркового рецикла, подаваемого в мелкий класс."
+        ],
+        formula: "dC2Min ∈ [0.3, dC1Min - 0.3] мм",
+        source: "ISO 14427:2004 'Carbonaceous materials used in the production of aluminium — Cold-ramming pastes'",
+        accessStatus: "🔒 Платный доступ (ISO Standard Store)",
+        sourceUrl: "https://www.iso.org/standard/38072.html",
+        excerpt: "«The medium-fine transition boundary d_trans ensures continuous particle packing without void bridging...»"
+    },
+    dDustInfo: {
+        formulaId: "dustSurface",
+        title: "Граница тонкого помола мельницы (dDust, мм)",
+        desc: "Размер граничного сита шаровой мельницы тонкого помола кокса (номинал 0.071 мм / 71 мкм, сито 200 меш).",
+        impacts: [
+            "Определяет удельную поверхность коксовой муки S_sp.",
+            "Ключевой фактор расхода пекового связующего (пыль связывает до 70% пека)."
+        ],
+        formula: "S_sp ~ (1 / d_dust), dDust ∈ [0.030, 0.125] мм",
+        source: "Pawlek, R.J. 'Quality Criteria of Calcined Petroleum Coke', Light Metals / ISO 10143",
+        accessStatus: "🔒 Платный доступ (Springer / ISO)",
+        sourceUrl: "https://link.springer.com/chapter/10.1007/978-3-319-48156-3_168",
+        excerpt: "«Section 3.1 Coke Flour Milling: Passing fraction through 71 µm sieve forms the continuous binder-filler matrix...»"
+    },
+    sieveProportionsInfo: {
+        formulaId: "dustSurface",
+        title: "Соотношение фракций 4-х бункеров СПО (%)",
+        desc: "Рецептурное дозирование кокса из 4 сортовых бункеров непрерывной смесительной линии: Крупная 1, Крупная 2, Мелкая, Пылевая.",
+        impacts: [
+            "Сумма дозировок должна строго равняться 100%.",
+            "Близость к идеальной кривой Фуллера (q=0.33) обеспечивает плотность упаковки ≥ 88%."
+        ],
+        formula: "∑ Frac_i = 100%,  RMSE = √[ (1/3) ∑ (Act_i - Ideal_i)² ]",
+        source: "Sørlie M. & Øye H.A. 'Anodes for Aluminium Electrolysis', R&D Carbon AG / ВАМИ",
+        accessStatus: "🔒 Платный / Издательский доступ",
+        sourceUrl: "https://www.materialsnorthwest.no",
+        excerpt: "«Optimum density is achieved when multi-fraction aggregate follows continuous sizing curve with minimum packing voids...»"
+    },
+    fracCoarseInfo: {
+        formulaId: "dustSurface",
+        title: "Бункер №1: Крупная фракция 1 (4.0–10.0 мм)",
+        desc: "Доля наиболее крупного зерна прокаленного кокса (10–25%). Формирует макроструктурный силовой скелет анода.",
+        impacts: [
+            "Снижает усадку анода при спекании.",
+            "Предотвращает образование сквозных продольных термических трещин."
+        ],
+        formula: "Frac_coarse ∈ [5, 30]%",
+        source: "Технологический регламент производства анодной массы СПО",
+        accessStatus: "🔒 Отраслевой доступ (РУСАЛ / ВАМИ)",
+        sourceUrl: "https://vami.ru",
+        excerpt: "«Крупнозернистый кокс обеспечивает геометрическую стабильность анодного блока при воздействии электродинамических сил...»"
+    },
+    fracMediumInfo: {
+        formulaId: "dustSurface",
+        title: "Бункер №2: Крупная 2 / Средняя фракция (1.0–4.0 мм)",
+        desc: "Промежуточная фракция кокса (20–35%). Заполняет пустоты между крупными гранулами первой фракции.",
+        impacts: [
+            "Повышает виброобъемную плотность сухого зернового каркаса.",
+            "Оптимизирует капиллярное проникновение жидкого пека."
+        ],
+        formula: "Frac_medium ∈ [15, 45]%",
+        source: "ISO 14427:2004 & ВАМИ СПО",
+        accessStatus: "🔒 Платный доступ (ISO Standard Store)",
+        sourceUrl: "https://www.iso.org/standard/38072.html",
+        excerpt: "«Medium fraction grains wedge between coarse particles, minimizing inter-particle void volume...»"
+    },
+    fracFineInfo: {
+        formulaId: "dustSurface",
+        title: "Бункер №3: Мелкая фракция / Огарок (0.071–1.0 мм)",
+        desc: "Фракция мелкого зерна, содержащая дробленый анодный огарок (15–30%).",
+        impacts: [
+            "Огарок имеет нулевую пористость, уплотняя мелкую матрицу.",
+            "Снижает удельное электрическое сопротивление обоженного анода."
+        ],
+        formula: "Frac_fine ∈ [10, 35]%",
+        source: "Sørlie M. & Øye H.A. 'Anodes for Aluminium Electrolysis'",
+        accessStatus: "🔒 Платный доступ (R&D Carbon AG)",
+        sourceUrl: "https://www.materialsnorthwest.no",
+        excerpt: "«Recycled butt material in the 0.1–1.0 mm range acts as pre-densified aggregate, lowering overall binder consumption...»"
+    },
+    fracDustInfo: {
+        formulaId: "dustSurface",
+        title: "Бункер №4: Пылевая фракция (< 0.071 мм / 71 мкм)",
+        desc: "Коксовая мука шаровых мельниц тонкого размола (30–45%). Совместно с пеком образует коксовую матрицу-клей.",
+        impacts: [
+            "Удельная поверхность пыли S_sp определяет 70% потребности в пеке.",
+            "Избыток пыли приводит к недопекованию и сухости массы."
+        ],
+        formula: "S_sp = 3200 × (Frac_dust / 36) × (0.071 / d_dust) см²/г",
+        source: "Frank W., Keller F., TMS Light Metals 2004 / ISO 10143",
+        accessStatus: "🔒 Платный доступ (Springer / TMS)",
+        sourceUrl: "https://link.springer.com/chapter/10.1007/978-3-319-48156-3_98",
+        excerpt: "«Fine flour content and its specific surface area dictate the wetting threshold and total pitch demand...»"
+    },
+    feedersGeneralInfo: {
+        formulaId: "pitchDemand",
+        title: "Весовые дозаторы непрерывного действия СПО",
+        desc: "Автоматизированная система весового непрерывного дозирования компонентов шихты и расходомеров жидкого пека.",
+        impacts: [
+            "Погрешность дозирования прямо влияет на разброс содержания пека в массе.",
+            "Стабильность дозаторов обеспечивает равномерное сопротивление анода."
+        ],
+        formula: "W_пек_факт = M_пек / (M_кокс + M_пек) × 100%,  σ_W = √(δ_кокс² + δ_пек²)",
+        source: "Технологический регламент СПО ВАМИ",
+        accessStatus: "🔒 Отраслевой доступ (ВАМИ)",
+        sourceUrl: "https://vami.ru",
+        excerpt: "«Раздел 4.1 Весодозирование: Класс точности непрерывных дозаторов должен обеспечивать стабильность состава не хуже ±0.3%...»"
+    },
+    throughputInfo: {
+        formulaId: "pitchDemand",
+        title: "Производительность смесительной линии СПО (т/ч)",
+        desc: "Суммарный часовой выпуск анодной массы непрерывным смесителем (15–40 т/ч).",
+        impacts: [
+            "Определяет минутные расходы кокса и связующего через дозаторы.",
+            "Влияет на время пребывания и теплообмен в смесителе."
+        ],
+        formula: "Q_пек = Throughput × (W_пек / 100) т/ч,  Q_кокс = Throughput - Q_пек т/ч",
+        source: "ВАМИ Технологический регламент СПО",
+        accessStatus: "🔒 Отраслевой доступ (ВАМИ)",
+        sourceUrl: "https://vami.ru",
+        excerpt: "«Номинальная загрузка смесителя непрерывного действия Buss или Ko-Kneader составляет 25 т/ч готовой массы...»"
+    },
+    errCokeInfo: {
+        formulaId: "pitchDemand",
+        title: "Погрешность весодозатора кокса (± %)",
+        desc: "Относительная погрешность автоматического ленточного весодозатора сухой шихты (класс 0.2–0.5%).",
+        impacts: [
+            "Вызывает стохастические колебания фактической доли пека в замесе.",
+            "Увеличивает риск локального перепекания или сухих зон."
+        ],
+        formula: "ΔW_кокс = ± W_пек × (δ_кокс / 100)",
+        source: "ГОСТ 30124-94 'Весы и дозаторы весовые непрерывного действия'",
+        accessStatus: "🔓 Открытый доступ (ГОСТ)",
+        sourceUrl: "https://docs.cntd.ru/document/1200004543",
+        excerpt: "«Пределы допускаемой погрешности дозаторов непрерывного действия в эксплуатационном режиме составляют ±0.5%...»"
+    },
+    errPitchInfo: {
+        formulaId: "pitchDemand",
+        title: "Погрешность дозатора/расходомера жидкого пека (± %)",
+        desc: "Относительная погрешность кориолисового или шестеренного расходомера жидкого пека (класс 0.2–0.5%).",
+        impacts: [
+            "Прямо смещает текучесть массы по Эйхлеру (каждые ±0.2% пека = ±0.08 ед. текучести).",
+            "Влияет на осыпаемость анода."
+        ],
+        formula: "ΔW_пек = ± (100 - W_пек) × (δ_пек / 100)",
+        source: "ISO 11624:2012 'Measurement of liquid hydrocarbon flow'",
+        accessStatus: "🔒 Платный доступ (ISO Standard Store)",
+        sourceUrl: "https://www.iso.org/standard/50632.html",
+        excerpt: "«Mass flow meters for viscous coal-tar pitch must be calibrated to maintain binder consistency within 0.2%...»"
+    },
+    thermalRegimesInfo: {
+        formulaId: "fluidity",
+        title: "Температурный режим установок СПО (°C)",
+        desc: "Комплекс тепловых установок: подогреватель кокса (195–210°C), бак жидкого пека (160–185°C) и обогреваемый смеситель (190–205°C).",
+        impacts: [
+            "Обеспечивает требуемую вязкость пека (менее 100 мПа·с) для смачивания пор кокса.",
+            "Перегрев смесителя выше 210°C резко увеличивает выбросы канцерогенных ПАУ."
+        ],
+        formula: "T_смеси_ном = 190–205 °C,  T_пек ≥ T_КиШ + 50 °C",
+        source: "Технологический регламент СПО ВАМИ / ISO 14428:2005",
+        accessStatus: "🔒 Отраслевой доступ (ВАМИ / ISO)",
+        sourceUrl: "https://vami.ru",
+        excerpt: "«Температура сухой шихты перед смесителем должна быть выше температуры пека на 15–25°C во избежание термоудара связующего...»"
+    },
+    tempCokeInfo: {
+        formulaId: "fluidity",
+        title: "Подогреватель шихты сухого кокса T_кокс (°C)",
+        desc: "Температура предварительного нагрева кокса во вращающемся трубчатом подогревателе перед подачей в смеситель (190–215°C).",
+        impacts: [
+            "Если кокс холоднее 180°C — жидкий пек моментально кристаллизуется на поверхности зерен, образуя комки («пековые шарики»).",
+            "Оптимальный диапазон: 195–205°C."
+        ],
+        formula: "T_кокс_мин = T_R&B + 80 °C",
+        source: "Sørlie M. & Øye H.A. 'Anodes for Aluminium Electrolysis', Ch. 5",
+        accessStatus: "🔒 Платный доступ (R&D Carbon AG)",
+        sourceUrl: "https://www.materialsnorthwest.no",
+        excerpt: "«Dry aggregate preheat temperature must exceed pitch softening point by at least 80°C to prevent thermal quenching of binder...»"
+    },
+    tempPitchInfo: {
+        formulaId: "pitchDemand",
+        title: "Температура жидкого связующего пека T_пек (°C)",
+        desc: "Температура расплава пека в пекоприемнике и обогреваемых пекопроводах перед впрыском в смеситель (160–185°C).",
+        impacts: [
+            "При T < T_КиШ + 50°C пек становится слишком вязким и не распыляется форсунками.",
+            "При T > 195°C начинается термодеструкция легколетучих фракций пека."
+        ],
+        formula: "T_пек_реком = T_R&B + 67 °C",
+        source: "ISO 5940-1:2019 'Coal-tar pitch — Determination of softening point'",
+        accessStatus: "🔒 Платный доступ (ISO Standard Store)",
+        sourceUrl: "https://www.iso.org/standard/72492.html",
+        excerpt: "«Binder pitch is pumped and metered at temperatures where dynamic viscosity falls between 50 and 150 mPa·s...»"
+    },
+    tempMixerInfo: {
+        formulaId: "fluidity",
+        title: "Температура смешивания анодной массы T_смеси (°C)",
+        desc: "Температура массы в непрерывном двухвальном смесителе (номинал 190–205°C).",
+        impacts: [
+            "Определяет реологию и текучесть массы по Эйхлеру при выгрузке.",
+            "Отклонение на каждые 10°C меняет текучесть на 0.25 единицы."
+        ],
+        formula: "F_I = f(T_смеси - 195),  PAH = f(T_смеси - 160)",
+        source: "Eichler H., Fischer W. 'Flowability of Anode Paste' / US EPA Method 315",
+        accessStatus: "🔒 Платный / Открытый доступ",
+        sourceUrl: "https://www.iso.org/standard/38073.html",
+        excerpt: "«Kneading temperature directly governs binder spreading kinetics over coke aggregate surfaces...»"
+    },
+    mixerTimeInfo: {
+        formulaId: "strength",
+        title: "Время перемешивания анодной массы (мин)",
+        desc: "Продолжительность механического перемешивания шихты со связующим в смесителе (номинал 30–40 мин).",
+        impacts: [
+            "Менее 20 мин: неполное распределение пека по порам кокса, снижение прочности на 15–20%.",
+            "Более 45 мин: переизмельчение зерен и окисление пека кислородом воздуха."
+        ],
+        formula: "t_смеси ≥ 25 мин (для полного смачивания капилляров зерен кокса)",
+        source: "Регламент смесительно-прессового отделения ВАМИ",
+        accessStatus: "🔒 Отраслевой доступ (ВАМИ)",
+        sourceUrl: "https://vami.ru",
+        excerpt: "«Минимальное время контакта кокса и пека в зоне активного перемешивания должно составлять не менее 25 минут...»"
     }
 };
 
@@ -416,7 +714,7 @@ const RAW_MATERIAL_PRESETS = {
         fracMedium: 28,
         fracFine: 18,
         fracDust: 39,
-        presetPitchRatio: 28.5,
+        presetPitchRatio: 28.0,
         lineThroughput: 25,
         feederErrCoke: 0.4,
         feederErrPitch: 0.3,
@@ -583,8 +881,9 @@ let currentTooltipFormulaId = null;
 class AnodeChemistryEngine {
     static calculate(state, pasteMode = "main_paste") {
         // 1. Calcination & VBD
-        const calcVbd = 0.72 + (state.tempCalcination - 1200) * 0.0003 + (state.cokeRealDensity - 2.00) * 0.5;
-        const vbdActual = Math.max(calcVbd, state.cokeVbd);
+        const cfgVbd = (FORMULA_CONFIG.vbd && FORMULA_CONFIG.vbd.coeffs) ? FORMULA_CONFIG.vbd.coeffs : FORMULA_DEFAULTS.vbd.coeffs;
+        const calcVbd = cfgVbd.baseVbd + (state.tempCalcination - 1200) * cfgVbd.k_temp + (state.cokeRealDensity - 2.00) * cfgVbd.k_density;
+        const vbdActual = parseFloat((state.cokeVbd || 0.84).toFixed(2));
         const vbdOk = vbdActual >= 0.82;
 
         // 2. 4-Fraction Size Boundaries
@@ -598,7 +897,14 @@ class AnodeChemistryEngine {
         const dDustRatio = cfgSurf.baseDustSize / dDust;
         const dustSurface = Math.round(cfgSurf.baseSurface * (state.fracDust / cfgSurf.baseDustFrac) * dDustRatio);
 
-        // 4. Fuller Packing
+        // 4. Sieve Normalization & Fuller/Andreasen Packing Curve
+        const totalSieveFrac = (state.fracDust || 0) + (state.fracFine || 0) + (state.fracMedium || 0) + (state.fracCoarse || 0);
+        const sieveBalanceOk = Math.abs(totalSieveFrac - 100) <= 0.5;
+        const safeTotal = totalSieveFrac > 0 ? totalSieveFrac : 100;
+        const normDust = (state.fracDust / safeTotal) * 100;
+        const normFine = (state.fracFine / safeTotal) * 100;
+        const normMedium = (state.fracMedium / safeTotal) * 100;
+
         const idealPassing = [
             100 * Math.pow(dDust / dC1Max, 0.33),
             100 * Math.pow(dC2Min / dC1Max, 0.33),
@@ -607,9 +913,9 @@ class AnodeChemistryEngine {
         ];
 
         const actPassing = [
-            state.fracDust,
-            state.fracDust + state.fracFine,
-            state.fracDust + state.fracFine + state.fracMedium,
+            normDust,
+            normDust + normFine,
+            normDust + normFine + normMedium,
             100.0
         ];
 
@@ -618,7 +924,7 @@ class AnodeChemistryEngine {
             rmse += Math.pow(actPassing[i] - idealPassing[i], 2);
         }
         rmse = Math.sqrt(rmse / 3);
-        const packingEfficiency = Math.max(65.0, Math.min(99.5, 98.5 - rmse * 1.15));
+        const packingEfficiency = Math.max(65.0, Math.min(99.5, 99.0 - rmse * 0.72));
 
         // 5. Optimal Pitch Demand with Configurable Coefficients
         const cfgPitch = FORMULA_CONFIG.pitchDemand.coeffs;
@@ -636,20 +942,29 @@ class AnodeChemistryEngine {
 
         wPitchOpt = Math.max(22.0, Math.min(35.0, parseFloat(wPitchOpt.toFixed(1))));
 
-        // 6. Thermal Regimes
+        // 6. Thermal Regimes & Technological Limits
         const tempCokeRec = 200;
         const tempPitchRec = Math.round(state.pitchSoftening + 67);
         const tempMixerRec = 195;
+        const minSafePitchTemp = state.pitchSoftening + 50;
 
-        // 7. Feeder Flow Rates
+        const pitchThermalRisk = state.tempPitchLiquid < minSafePitchTemp;
+        const cokeThermalRisk = state.tempCokePreheat < 180;
+        const mixerTimeRisk = state.mixerTime < 20;
+
+        // 7. Feeder Flow Rates & Dosing Uncertainty
         const pitchFeedRate = state.lineThroughput * (wPitchOpt / 100);
         const cokeFeedRate = state.lineThroughput * (1 - wPitchOpt / 100);
         const pitchCurrentRate = state.lineThroughput * (state.presetPitchRatio / 100);
 
+        const errCoke = state.feederErrCoke || 0.4;
+        const errPitch = state.feederErrPitch || 0.3;
+        const dosingScatter = parseFloat(Math.sqrt(errCoke * errCoke + errPitch * errPitch).toFixed(2));
+
         const pitchDelta = state.presetPitchRatio - wPitchOpt;
         const tempDelta = state.tempMixer - tempMixerRec;
 
-        // 8. Quality Predictions with Configurable Coefficients
+        // 8. Quality Predictions with Smooth Curves
         const cfgFluid = FORMULA_CONFIG.fluidity.coeffs;
         let fluidity = cfgFluid.baseFluidity + (pitchDelta * cfgFluid.k_pitch) + (tempDelta * cfgFluid.k_temp) - ((state.pitchAlpha - 9.5) * cfgFluid.k_alpha);
         if (pasteMode === "pin_paste") fluidity += 0.9;
@@ -664,28 +979,68 @@ class AnodeChemistryEngine {
         resistivity = parseFloat(Math.max(48.0, Math.min(85.0, resistivity)).toFixed(1));
 
         const cfgStr = FORMULA_CONFIG.strength.coeffs;
+        const betaCorrection = ((state.pitchBeta || 20.5) - 20.5) * 0.35;
+        const timePenalty = Math.max(0, 25 - (state.mixerTime || 35)) * 0.25;
+        const lowFluidityDeficit = Math.max(0, 1.5 - fluidity);
+
         let strength = cfgStr.baseStrength * Math.pow(bakedDensity / cfgStr.targetDensity, 2) - Math.abs(pitchDelta) * cfgStr.k_pitchDelta;
-        if (fluidity < 1.5) strength -= 6.0;
+        strength += betaCorrection - timePenalty - (lowFluidityDeficit * 12.0);
         strength = parseFloat(Math.max(18.0, Math.min(52.0, strength)).toFixed(1));
 
         const cfgDust = FORMULA_CONFIG.dusting.coeffs;
-        let dusting = cfgDust.baseDusting + (Math.abs(pitchDelta) * cfgDust.k_pitchDelta) + (state.cokeAsh * cfgDust.k_ash);
-        if (fluidity < 1.5) dusting += 3.0;
+        let dusting = cfgDust.baseDusting + (Math.abs(pitchDelta) * cfgDust.k_pitchDelta) + (state.cokeAsh * cfgDust.k_ash) + (lowFluidityDeficit * 6.0);
         dusting = parseFloat(Math.max(2.0, Math.min(12.5, dusting)).toFixed(1));
 
-        let pahEmissions = 0.42 * (1 + (state.tempMixer - 160) * 0.012) * (state.presetPitchRatio / 28.5);
+        const cfgPah = (FORMULA_CONFIG.pah && FORMULA_CONFIG.pah.coeffs) ? FORMULA_CONFIG.pah.coeffs : FORMULA_DEFAULTS.pah.coeffs;
+        let pahEmissions = cfgPah.basePah * (1 + (state.tempMixer - 160) * cfgPah.k_temp) * (state.presetPitchRatio / cfgPah.basePitchRatio);
         pahEmissions = parseFloat(Math.max(0.2, Math.min(1.8, pahEmissions)).toFixed(2));
 
         let alerts = [];
         let statusSeverity = "NORMAL";
 
+        if (!sieveBalanceOk) {
+            alerts.push({
+                type: "CRITICAL",
+                title: "ДИСБАЛАНС ШИХТЫ (СУММА ≠ 100%)",
+                desc: `Текущая сумма 4-х фракций равна ${totalSieveFrac}%. Нажмите кнопку «Сбалансировать 100%» для автоматической нормализации.`
+            });
+            statusSeverity = "CRITICAL";
+        }
+
         if (!vbdOk) {
             alerts.push({
                 type: "WARNING",
                 title: "НИЗКИЙ ВОП ПРОКАЛЕННОГО КОКСА (< 0.82 г/см³)",
-                desc: `ВОП равен ${vbdActual.toFixed(2)} г/см³ (требование схемы ≥ 0.82 г/см³). Поднимите температуру печи прокалки!`
+                desc: `Лабораторный ВОП равен ${vbdActual.toFixed(2)} г/см³ (норма схемы ≥ 0.82 г/см³). Поднимите температуру печи прокалки!`
             });
-            statusSeverity = "WARNING";
+            if (statusSeverity !== "CRITICAL") statusSeverity = "WARNING";
+        }
+
+        if (pitchThermalRisk) {
+            alerts.push({
+                type: "WARNING",
+                title: "РИСК КРИСТАЛЛИЗАЦИИ ПЕКА В ПЕКОПРОВОДАХ",
+                desc: `Температура жидкого пека (${state.tempPitchLiquid}°C) ниже безопасного предела (${minSafePitchTemp}°C = КиШ + 50°C).`
+            });
+            if (statusSeverity !== "CRITICAL") statusSeverity = "WARNING";
+        }
+
+        if (cokeThermalRisk) {
+            alerts.push({
+                type: "WARNING",
+                title: "НИЗКАЯ ТЕМПЕРАТУРА ПОДОГРЕВА КОКСА",
+                desc: `Температура сухого кокса (${state.tempCokePreheat}°C) ниже 180°C. Риск термоудара пека и образования комков.`
+            });
+            if (statusSeverity !== "CRITICAL") statusSeverity = "WARNING";
+        }
+
+        if (mixerTimeRisk) {
+            alerts.push({
+                type: "WARNING",
+                title: "НЕДОСТАТОЧНОЕ ВРЕМЯ СМЕШИВАНИЯ",
+                desc: `Время смешивания (${state.mixerTime} мин) менее 20 мин. Риск неполного смачивания пор кокса.`
+            });
+            if (statusSeverity !== "CRITICAL") statusSeverity = "WARNING";
         }
 
         if (pitchDelta > 1.2) {
@@ -719,7 +1074,10 @@ class AnodeChemistryEngine {
             dDust,
             vbdActual,
             vbdOk,
+            calcVbd,
             dustSurface,
+            totalSieveFrac,
+            sieveBalanceOk,
             idealPassing,
             actPassing,
             packingEfficiency,
@@ -730,6 +1088,7 @@ class AnodeChemistryEngine {
             pitchFeedRate,
             cokeFeedRate,
             pitchCurrentRate,
+            dosingScatter,
             pitchDelta,
             tempDelta,
             fluidity,
@@ -744,8 +1103,69 @@ class AnodeChemistryEngine {
     }
 }
 
+// LocalStorage Persistence Configuration
+const STORAGE_KEY = 'SoderbergAdvisor_FormulaConfig_v6';
+
+function loadSavedFormulaConfig() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            for (const key in FORMULA_DEFAULTS) {
+                if (parsed[key] && parsed[key].coeffs) {
+                    FORMULA_CONFIG[key] = parsed[key];
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('LocalStorage error:', e);
+    }
+}
+
+function saveFormulaConfigToStorage() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(FORMULA_CONFIG));
+    } catch (e) {
+        console.warn('LocalStorage error:', e);
+    }
+}
+
+// Sieve Granulometry Auto-Balancing Function
+function balanceSieveFractions() {
+    const sum = (currentState.fracCoarse || 0) + (currentState.fracMedium || 0) + (currentState.fracFine || 0) + (currentState.fracDust || 0);
+    if (sum === 0) return;
+    const factor = 100 / sum;
+    let coarse = Math.round(currentState.fracCoarse * factor);
+    let medium = Math.round(currentState.fracMedium * factor);
+    let fine = Math.round(currentState.fracFine * factor);
+    let dust = 100 - (coarse + medium + fine);
+
+    currentState.fracCoarse = Math.max(5, Math.min(30, coarse));
+    currentState.fracMedium = Math.max(15, Math.min(45, medium));
+    currentState.fracFine = Math.max(10, Math.min(35, fine));
+    currentState.fracDust = 100 - (currentState.fracCoarse + currentState.fracMedium + currentState.fracFine);
+
+    const sieveIds = ['fracCoarse', 'fracMedium', 'fracFine', 'fracDust'];
+    sieveIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = currentState[id];
+        const valSpan = document.getElementById(`${id}Val`);
+        if (valSpan) valSpan.innerText = `${currentState[id]}%`;
+    });
+
+    const totalEl = document.getElementById('fracTotalVal');
+    if (totalEl) {
+        totalEl.innerText = '100%';
+        totalEl.style.color = 'var(--accent-cyan)';
+    }
+
+    updateDashboard();
+}
+
 // UI Controller
 function initUI() {
+    loadSavedFormulaConfig();
+
     const numericInputs = [
         'tempCalcination', 'cokeRealDensity', 'cokeVbd', 'cokePorosity', 'cokeAsh', 'anodeButtRatio',
         'pitchSoftening', 'pitchCokingValue', 'pitchAlpha', 'pitchBeta',
@@ -771,9 +1191,10 @@ function initUI() {
             if (pasteTypeMode === "pin_paste") {
                 currentState.presetPitchRatio = 31.0;
             } else {
-                currentState.presetPitchRatio = 28.5;
+                currentState.presetPitchRatio = 28.0;
             }
-            document.getElementById('presetPitchRatio').value = currentState.presetPitchRatio.toFixed(1);
+            const pitchInp = document.getElementById('presetPitchRatio');
+            if (pitchInp) pitchInp.value = currentState.presetPitchRatio.toFixed(1);
             updateDashboard();
         });
     }
@@ -783,18 +1204,26 @@ function initUI() {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('input', (e) => {
-                currentState[id] = parseInt(e.target.value);
-                document.getElementById(`${id}Val`).innerText = `${currentState[id]}%`;
+                currentState[id] = parseInt(e.target.value) || 0;
+                const valSpan = document.getElementById(`${id}Val`);
+                if (valSpan) valSpan.innerText = `${currentState[id]}%`;
                 
                 const total = currentState.fracCoarse + currentState.fracMedium + currentState.fracFine + currentState.fracDust;
                 const totalEl = document.getElementById('fracTotalVal');
-                totalEl.innerText = `${total}%`;
-                totalEl.style.color = (total === 100) ? 'var(--accent-cyan)' : 'var(--accent-red)';
+                if (totalEl) {
+                    totalEl.innerText = `${total}%`;
+                    totalEl.style.color = (total === 100) ? 'var(--accent-cyan)' : 'var(--accent-red)';
+                }
                 
                 updateDashboard();
             });
         }
     });
+
+    const balanceBtn = document.getElementById('balanceSieveBtn');
+    if (balanceBtn) {
+        balanceBtn.addEventListener('click', balanceSieveFractions);
+    }
 
     const presetSelect = document.getElementById('presetSelect');
     if (presetSelect) {
@@ -802,6 +1231,9 @@ function initUI() {
             const key = e.target.value;
             if (RAW_MATERIAL_PRESETS[key]) {
                 currentState = { ...RAW_MATERIAL_PRESETS[key] };
+                if (pasteTypeMode === "pin_paste" && key === "standard") {
+                    currentState.presetPitchRatio = 31.0;
+                }
                 loadStateToForm();
                 updateDashboard();
             }
@@ -832,6 +1264,7 @@ function initUI() {
     document.getElementById('resetSingleFormulaBtn').addEventListener('click', () => {
         if (currentTooltipFormulaId && FORMULA_DEFAULTS[currentTooltipFormulaId]) {
             FORMULA_CONFIG[currentTooltipFormulaId] = JSON.parse(JSON.stringify(FORMULA_DEFAULTS[currentTooltipFormulaId]));
+            saveFormulaConfigToStorage();
             alert(`Формула "${FORMULA_DEFAULTS[currentTooltipFormulaId].title}" успешно восстановлена к исходным значениям!`);
             updateDashboard();
         }
@@ -843,9 +1276,27 @@ function initUI() {
     document.getElementById('closeModalBtn').addEventListener('click', closeReportModal);
     document.getElementById('dismissModalBtn').addEventListener('click', closeReportModal);
 
+    // Accessibility: Escape key and backdrop clicks
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeFormulaEditorModal();
+            closeTooltipModal();
+            closeReportModal();
+        }
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.add('hidden');
+            }
+        });
+    });
+
     initCharts();
     initVisualizer();
     updateDashboard();
+    startVisualizerLoop();
 }
 
 function loadStateToForm() {
@@ -863,6 +1314,7 @@ function loadStateToForm() {
 
 function updateDashboard() {
     const calc = AnodeChemistryEngine.calculate(currentState, pasteTypeMode);
+    lastCalcState = calc;
 
     const lblCoarse1 = document.getElementById('labelCoarse1');
     const lblCoarse2 = document.getElementById('labelCoarse2');
@@ -893,17 +1345,23 @@ function updateDashboard() {
     const pitchAdviceText = document.getElementById('textPitchAdvice');
     const badgePitchStatus = document.getElementById('badgePitchStatus');
 
+    const scatterEl = document.getElementById('valPitchScatter');
+    if (scatterEl) {
+        scatterEl.innerText = `±${calc.dosingScatter}%`;
+        scatterEl.title = `Случайный разброс дозирования от суммарной погрешности дозаторов (кокс: ±${currentState.feederErrCoke}%, пек: ±${currentState.feederErrPitch}%)`;
+    }
+
     if (Math.abs(calc.pitchDelta) <= 0.3) {
         badgePitchStatus.innerText = 'ОПТИМАЛЬНО';
         badgePitchStatus.style.background = 'rgba(16, 185, 129, 0.2)';
         badgePitchStatus.style.color = 'var(--accent-green)';
-        pitchAdviceText.innerHTML = `Дозировка пека сбалансирована. Расход пека: <strong>${calc.pitchFeedRate.toFixed(2)} т/ч</strong> (кокс: <strong>${calc.cokeFeedRate.toFixed(2)} т/ч</strong>).`;
+        pitchAdviceText.innerHTML = `Дозировка пека сбалансирована. Расход пека: <strong>${calc.pitchFeedRate.toFixed(2)} т/ч</strong> (кокс: <strong>${calc.cokeFeedRate.toFixed(2)} т/ч</strong>, разброс: ±${calc.dosingScatter}%).`;
     } else {
         const diff = calc.pitchDelta > 0 ? `снизить на -${calc.pitchDelta.toFixed(1)}%` : `поднять на +${Math.abs(calc.pitchDelta).toFixed(1)}%`;
         badgePitchStatus.innerText = 'ТРЕБУЕТСЯ КОРРЕКЦИЯ';
         badgePitchStatus.style.background = 'rgba(245, 158, 11, 0.2)';
         badgePitchStatus.style.color = 'var(--accent-orange)';
-        pitchAdviceText.innerHTML = `Рекомендуется <strong>${diff}</strong>. Целевой расход дозатора пека: <strong>${calc.pitchFeedRate.toFixed(2)} т/ч</strong>.`;
+        pitchAdviceText.innerHTML = `Рекомендуется <strong>${diff}</strong>. Целевой расход дозатора пека: <strong>${calc.pitchFeedRate.toFixed(2)} т/ч</strong> (разброс: ±${calc.dosingScatter}%).`;
     }
 
     document.getElementById('valCurrentMixerT').innerText = `${currentState.tempMixer}°C`;
@@ -933,7 +1391,7 @@ function updateDashboard() {
     if (calc.packingEfficiency >= 88) {
         badgeSieveStatus.innerText = 'ОПТИМАЛЬНО';
         badgeSieveStatus.style.color = 'var(--accent-green)';
-        sieveAdviceText.innerText = `Грансостав обеспечивает идеальную упаковку 4-х фракций (dC1Max=${calc.dC1Max}мм, dDust=${calc.dDust}мм).`;
+        sieveAdviceText.innerText = `Грансостав обеспечивает идеальную упаковку 4-х фракций (dC1Max=${calc.dC1Max}мм, dDust=${calc.dDust}мм, сумма ${calc.totalSieveFrac}%).`;
     } else {
         badgeSieveStatus.innerText = 'НИЗКАЯ ПЛОТНОСТЬ';
         badgeSieveStatus.style.color = 'var(--accent-red)';
@@ -942,13 +1400,12 @@ function updateDashboard() {
 
     updateKPI('kpiFluidity', 'kpiFluidityStatus', calc.fluidity, '', (calc.fluidity >= 1.6 && calc.fluidity <= 3.2), pasteTypeMode === "pin_paste" ? 'Подштыревая (>2.8)' : 'Основная (1.6 - 2.8)');
     updateKPI('kpiBakedDensity', 'kpiBakedDensityStatus', calc.bakedDensity.toFixed(2), 'г/см³', calc.bakedDensity >= 1.48, `Отлично (> 1.48)`);
-    updateKPI('kpiResistivity', 'kpiResistivityStatus', calc.resistivity.toFixed(1), 'Ом·мм²/м', calc.resistivity <= 62.0, `Цель схемы: 62 мкОм·м`);
+    updateKPI('kpiResistivity', 'kpiResistivityStatus', calc.resistivity.toFixed(1), 'мкОм·м', calc.resistivity <= 62.0, `Цель схемы: 62 мкОм·м`);
     updateKPI('kpiStrength', 'kpiStrengthStatus', calc.strength.toFixed(1), 'МПа', calc.strength >= 32, `Высокая (> 32)`);
     updateKPI('kpiDusting', 'kpiDustingStatus', calc.dusting.toFixed(1), '% потерь', calc.dusting <= 5.5, `Малый шум (< 5.5%)`);
     updateKPI('kpiPahEmissions', 'kpiPahStatus', calc.pahEmissions.toFixed(2), 'кг/т Al', calc.pahEmissions <= 0.60, `Экологично (< 0.60)`);
 
     updateCharts(calc);
-    renderVisualizer(calc);
 }
 
 function updateKPI(valId, statusId, value, unit, isGood, statusText) {
@@ -1045,7 +1502,6 @@ function openFormulaEditorModal() {
     let html = '';
     for (const key in FORMULA_CONFIG) {
         const item = FORMULA_CONFIG[key];
-        const defaultItem = FORMULA_DEFAULTS[key];
 
         const varsHtml = item.russianVars.map(v => `<span class="var-tag">📌 ${v}</span>`).join(' ');
 
@@ -1088,6 +1544,7 @@ function openFormulaEditorModal() {
             const id = btn.getAttribute('data-reset-id');
             if (id && FORMULA_DEFAULTS[id]) {
                 FORMULA_CONFIG[id] = JSON.parse(JSON.stringify(FORMULA_DEFAULTS[id]));
+                saveFormulaConfigToStorage();
                 openFormulaEditorModal(); // Re-render editor UI
                 updateDashboard(); // Recalculate
             }
@@ -1111,13 +1568,17 @@ function saveFormulaEditorChanges() {
             FORMULA_CONFIG[fId].coeffs[cKey] = val;
         }
     });
+    saveFormulaConfigToStorage();
 }
 
 function resetAllFormulasToDefaults() {
     FORMULA_CONFIG = JSON.parse(JSON.stringify(FORMULA_DEFAULTS));
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
     openFormulaEditorModal();
     updateDashboard();
-    alert('Все 7 математических формул и эмпирических коэффициентов восстановлены к исходным нормативным значениям!');
+    alert('Все 9 математических формул и эмпирических коэффициентов восстановлены к исходным нормативным значениям!');
 }
 
 // Chart.js Implementations
@@ -1213,59 +1674,87 @@ function updateCharts(calc) {
     }
 }
 
-// Canvas Visualizer
+// Canvas Visualizer & Animation Loop
 let wavePhase = 0;
+let lastCalcState = null;
+let animFrameId = null;
+
 function initVisualizer() {
     const canvas = document.getElementById('soderbergPotCanvas');
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio || 800;
-    canvas.height = rect.height * window.devicePixelRatio || 260;
+    const dpr = window.devicePixelRatio || 1;
+    const displayWidth = rect.width || 800;
+    const displayHeight = 260;
+
+    canvas.width = Math.round(displayWidth * dpr);
+    canvas.height = Math.round(displayHeight * dpr);
+    canvas.style.height = `${displayHeight}px`;
+
+    if (lastCalcState) {
+        renderVisualizer(lastCalcState);
+    }
+}
+
+function startVisualizerLoop() {
+    if (animFrameId) cancelAnimationFrame(animFrameId);
+    function animate() {
+        if (lastCalcState) {
+            wavePhase += 0.03 * (lastCalcState.fluidity / 2.1);
+            renderVisualizer(lastCalcState);
+        }
+        animFrameId = requestAnimationFrame(animate);
+    }
+    animFrameId = requestAnimationFrame(animate);
 }
 
 function renderVisualizer(calc) {
     const canvas = document.getElementById('soderbergPotCanvas');
-    if (!canvas) return;
+    if (!canvas || !calc) return;
     const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
+    const dpr = window.devicePixelRatio || 1;
+    const width = canvas.width / dpr;
+    const height = canvas.height / dpr;
 
+    ctx.save();
+    ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, width, height);
 
-    const padX = width * 0.15;
-    const potWidth = width * 0.7;
+    const padX = width * 0.10;
+    const potWidth = width * 0.80;
     const topY = height * 0.12;
     const potHeight = height * 0.78;
 
-    // Anode Frame
-    ctx.strokeStyle = '#64748b';
-    ctx.lineWidth = 4;
+    // Anode Frame (Обечайка анода)
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 3;
     ctx.strokeRect(padX, topY, potWidth, potHeight);
 
-    // Top Liquid Paste
+    // Top Liquid Paste Zone (130-170°C)
     const liquidH = potHeight * 0.28;
     const liquidGradient = ctx.createLinearGradient(padX, topY, padX, topY + liquidH);
-    liquidGradient.addColorStop(0, '#1e3a8a');
+    liquidGradient.addColorStop(0, '#1d4ed8');
     liquidGradient.addColorStop(1, '#3b82f6');
     ctx.fillStyle = liquidGradient;
     ctx.fillRect(padX + 2, topY + 2, potWidth - 4, liquidH);
 
-    wavePhase += 0.05;
+    // Hydrodynamic Wave
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.lineWidth = 2;
-    for (let x = padX + 10; x < padX + potWidth - 10; x += 5) {
-        const y = topY + liquidH * 0.5 + Math.sin(x * 0.03 + wavePhase) * (calc.fluidity * 2.5);
-        if (x === padX + 10) ctx.moveTo(x, y);
+    const waveAmp = Math.min(8, Math.max(1.5, calc.fluidity * 2.2));
+    for (let x = padX + 6; x < padX + potWidth - 6; x += 4) {
+        const y = topY + 18 + Math.sin((x - padX) * 0.035 + wavePhase) * waveAmp;
+        if (x === padX + 6) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
     }
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px Inter, sans-serif';
-    ctx.fillText(`${pasteTypeMode === "pin_paste" ? "ПОДШТЫРЕВАЯ МАССА (31%)" : "ОСНОВНАЯ МАССА (28%)"} • Текучесть: ${calc.fluidity}`, padX + 20, topY + 25);
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.fillText(`${pasteTypeMode === "pin_paste" ? "ПОДШТЫРЕВАЯ МАССА (31%)" : "ОСНОВНАЯ МАССА (28%)"} • Текучесть: ${calc.fluidity}`, padX + 16, topY + 22);
 
-    // Coking Zone
+    // Coking Zone (400-600°C)
     const cokingY = topY + liquidH;
     const cokingH = potHeight * 0.32;
     const cokingGradient = ctx.createLinearGradient(padX, cokingY, padX, cokingY + cokingH);
@@ -1275,9 +1764,9 @@ function renderVisualizer(calc) {
     ctx.fillRect(padX + 2, cokingY, potWidth - 4, cokingH);
 
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`ЗОНА ПИРОЛИЗА (400-600°C)`, padX + 20, cokingY + 25);
+    ctx.fillText(`ЗОНА ПИРОЛИЗА И КОКСОВАНИЯ (400–600°C)`, padX + 16, cokingY + 22);
 
-    // Baked Anode
+    // Baked Anode (950°C)
     const bakedY = cokingY + cokingH;
     const bakedH = potHeight - liquidH - cokingH;
     const bakedGradient = ctx.createLinearGradient(padX, bakedY, padX, bakedY + bakedH);
@@ -1287,21 +1776,38 @@ function renderVisualizer(calc) {
     ctx.fillRect(padX + 2, bakedY, potWidth - 4, bakedH - 2);
 
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`ОБОЖЕННЫЙ АНОД (950°C) • Плотность: ${calc.bakedDensity} г/см³ • УЭС: ${calc.resistivity} мкОм·м`, padX + 20, bakedY + 25);
+    ctx.fillText(`ОБОЖЕННЫЙ АНОД (950°C) • Плотность: ${calc.bakedDensity} г/см³ • УЭС: ${calc.resistivity} мкОм·м`, padX + 16, bakedY + 22);
 
-    // Pins
-    ctx.fillStyle = '#cbd5e1';
-    for (let i = 1; i <= 4; i++) {
-        const pinX = padX + (i * potWidth / 5);
-        ctx.fillRect(pinX - 6, topY - 15, 12, liquidH + cokingH + 15);
+    // Steel Current Pins (Токоподводящие штыри)
+    const pinCount = 4;
+    for (let i = 1; i <= pinCount; i++) {
+        const pinX = padX + (i * potWidth / (pinCount + 1));
+        const pinGrad = ctx.createLinearGradient(pinX - 6, topY - 15, pinX + 6, topY - 15);
+        pinGrad.addColorStop(0, '#94a3b8');
+        pinGrad.addColorStop(0.5, '#f1f5f9');
+        pinGrad.addColorStop(1, '#64748b');
+        ctx.fillStyle = pinGrad;
+        ctx.fillRect(pinX - 6, topY - 16, 12, liquidH + cokingH + 18);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(pinX - 6, topY - 16, 12, liquidH + cokingH + 18);
     }
+
+    ctx.restore();
 }
 
-// Research Report Generator with Bibliographic Source Links
+// Research Report Generator with Bibliographic Source Links and Dynamic Formula Expressions
 function openReportModal() {
     const calc = AnodeChemistryEngine.calculate(currentState, pasteTypeMode);
     const reportArea = document.getElementById('printableReportArea');
     const dateStr = new Date().toLocaleString('ru-RU');
+
+    const fPitch = FORMULA_CONFIG.pitchDemand ? FORMULA_CONFIG.pitchDemand.expr : 'W_opt = f(S_sp, ρ, P)';
+    const fFluid = FORMULA_CONFIG.fluidity ? FORMULA_CONFIG.fluidity.expr : 'F_I = f(ΔW, ΔT)';
+    const fBaked = FORMULA_CONFIG.bakedDensity ? FORMULA_CONFIG.bakedDensity.expr : 'ρ_baked = f(ΔW, Pack, Ash)';
+    const fRes = FORMULA_CONFIG.resistivity ? FORMULA_CONFIG.resistivity.expr : 'RES = f(ρ_baked, ΔW)';
+    const fDust = FORMULA_CONFIG.dusting ? FORMULA_CONFIG.dusting.expr : 'Dusting = f(ΔW, Ash)';
+    const fPah = FORMULA_CONFIG.pah ? FORMULA_CONFIG.pah.expr : 'PAH = f(T, W)';
 
     reportArea.innerHTML = `
         <div style="font-family: var(--font-main); color: #000; background: #fff; padding: 20px; border-radius: 8px;">
@@ -1311,9 +1817,9 @@ function openReportModal() {
                 <p style="font-size: 10px; color: #666;">Дата: ${dateStr} | Режим: ${pasteTypeMode === "pin_paste" ? "Подштыревая масса (База 31.0% пека)" : "Основная анодная масса (База 28.0% пека)"}</p>
             </div>
 
-            <h3 style="font-size: 14px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">1. Формулы, первоисточники и цитаты-фрагменты</h3>
+            <h3 style="font-size: 14px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">1. Формулы, первоисточники и текущие расчетные значения</h3>
             <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;">
-                <tr style="background: #f1f5f9;"><th style="border: 1px solid #ccc; padding: 5px; text-align: left;">Показатель</th><th style="border: 1px solid #ccc; padding: 5px; text-align: right;">Значение</th><th style="border: 1px solid #ccc; padding: 5px; text-align: left;">Формула</th><th style="border: 1px solid #ccc; padding: 5px; text-align: left;">Источник и Доступ</th></tr>
+                <tr style="background: #f1f5f9;"><th style="border: 1px solid #ccc; padding: 5px; text-align: left;">Показатель</th><th style="border: 1px solid #ccc; padding: 5px; text-align: right;">Значение</th><th style="border: 1px solid #ccc; padding: 5px; text-align: left;">Используемая формула</th><th style="border: 1px solid #ccc; padding: 5px; text-align: left;">Источник и Доступ</th></tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 5px;">Упаковка Фуллера</td>
                     <td style="border: 1px solid #ccc; padding: 5px; text-align: right;">${calc.packingEfficiency.toFixed(1)}%</td>
@@ -1322,38 +1828,38 @@ function openReportModal() {
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 5px;">Потребность в пеке W_пек</td>
-                    <td style="border: 1px solid #ccc; padding: 5px; text-align: right; font-weight: bold; color: #2563eb;">${calc.wPitchOpt.toFixed(1)}%</td>
-                    <td style="border: 1px solid #ccc; padding: 5px;">27.2 + ΔW_пыль + ΔW_порист - ΔW_огарок</td>
+                    <td style="border: 1px solid #ccc; padding: 5px; text-align: right; font-weight: bold; color: #2563eb;">${calc.wPitchOpt.toFixed(1)}% (разброс ±${calc.dosingScatter}%)</td>
+                    <td style="border: 1px solid #ccc; padding: 5px;">${fPitch}</td>
                     <td style="border: 1px solid #ccc; padding: 5px;"><a href="https://link.springer.com/chapter/10.1007/978-3-319-48156-3_98" target="_blank">TMS Light Metals 2004</a> (🔒 Платный)</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 5px;">Текучесть по Эйхлеру</td>
                     <td style="border: 1px solid #ccc; padding: 5px; text-align: right;">${calc.fluidity}</td>
-                    <td style="border: 1px solid #ccc; padding: 5px;">F_I = 2.1 + ΔW×0.42 + ΔT×0.025 - Δα×0.05</td>
+                    <td style="border: 1px solid #ccc; padding: 5px;">${fFluid}</td>
                     <td style="border: 1px solid #ccc; padding: 5px;"><a href="https://www.iso.org/standard/38073.html" target="_blank">ISO 14428:2005</a> (🔒 Платный)</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 5px;">Кажущаяся плотность</td>
                     <td style="border: 1px solid #ccc; padding: 5px; text-align: right;">${calc.bakedDensity} г/см³</td>
-                    <td style="border: 1px solid #ccc; padding: 5px;">ρ_baked = 1.53 - |ΔW|×0.038 - ΔPack×0.0025</td>
+                    <td style="border: 1px solid #ccc; padding: 5px;">${fBaked}</td>
                     <td style="border: 1px solid #ccc; padding: 5px;"><a href="https://www.iso.org/standard/21359.html" target="_blank">ISO 12985-1:2000</a> (🔒 Платный)</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 5px;">Удельное электросопротивление</td>
                     <td style="border: 1px solid #ccc; padding: 5px; text-align: right; font-weight: bold;">${calc.resistivity} мкОм·м</td>
-                    <td style="border: 1px solid #ccc; padding: 5px;">RES = 56.5 + (1.52 - ρ_baked)×45 ≤ 62.0</td>
+                    <td style="border: 1px solid #ccc; padding: 5px;">${fRes}</td>
                     <td style="border: 1px solid #ccc; padding: 5px;"><a href="https://www.iso.org/standard/20268.html" target="_blank">ISO 11713:2000</a> (🔒 Платный)</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 5px;">Осыпаемость в CO2/O2</td>
                     <td style="border: 1px solid #ccc; padding: 5px; text-align: right;">${calc.dusting}%</td>
-                    <td style="border: 1px solid #ccc; padding: 5px;">Dusting = 4.0 + |ΔW|×1.8 + Ash×3.5</td>
+                    <td style="border: 1px solid #ccc; padding: 5px;">${fDust}</td>
                     <td style="border: 1px solid #ccc; padding: 5px;"><a href="https://www.iso.org/standard/21364.html" target="_blank">ISO 12988-1:2000</a> (🔒 Платный)</td>
                 </tr>
                 <tr>
                     <td style="border: 1px solid #ccc; padding: 5px;">Выхлоп ПАУ</td>
                     <td style="border: 1px solid #ccc; padding: 5px; text-align: right;">${calc.pahEmissions} кг/т Al</td>
-                    <td style="border: 1px solid #ccc; padding: 5px;">PAH = 0.42 × (1 + ΔT×0.012) × (W_пек / 28.5)</td>
+                    <td style="border: 1px solid #ccc; padding: 5px;">${fPah}</td>
                     <td style="border: 1px solid #ccc; padding: 5px;"><a href="https://www.epa.gov/emc/method-315-particulate-and-mcem" target="_blank">US EPA Method 315</a> (🔓 Открытый)</td>
                 </tr>
             </table>

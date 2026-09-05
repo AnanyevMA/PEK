@@ -216,7 +216,10 @@
                             <span id="fracDustVal" class="sieve-val">39%</span>
                         </div>
                         <div class="sieve-summary">
-                            <span>Сумма шихты: <strong id="fracTotalVal">100%</strong></span>
+                            <div class="sieve-sum-block">
+                                <span>Сумма шихты: <strong id="fracTotalVal">100%</strong></span>
+                                <button type="button" id="balanceSieveBtn" class="btn btn-secondary btn-xs" title="Автоматически сбалансировать сумму 4 фракций до 100%">Сбалансировать 100%</button>
+                            </div>
                             <span>Удельная поверхность пыли S<sub>sp</sub>: <strong id="dustSurfaceVal">3450 см²/г</strong></span>
                         </div>
                     </div>
@@ -240,7 +243,7 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Заданная дозировка пека W<sub>пек</sub> (wt %) [Шаг 0.1%] <span class="info-btn" data-tooltip="presetPitchInfo">?</span></label>
-                            <input type="number" id="presetPitchRatio" step="0.1" min="22.0" max="35.0" value="28.5">
+                            <input type="number" id="presetPitchRatio" step="0.1" min="22.0" max="35.0" value="28.0">
                             <span class="hint">Уставка дозатора пека (шаг 0.1%)</span>
                         </div>
                         <div class="form-group">
@@ -323,6 +326,7 @@
                                 <div class="metric-box target">
                                     <span class="label">Советчик предлагает</span>
                                     <span class="val" id="valAdvisedPitch">27.2%</span>
+                                    <span class="val-sub" id="valPitchScatter" title="Случайный разброс дозирования от погрешности дозаторов">±0.5%</span>
                                 </div>
                             </div>
                             <p class="rec-text" id="textPitchAdvice">
@@ -412,10 +416,10 @@
                         <div class="kpi-icon">⚡</div>
                         <div class="kpi-content">
                             <div class="kpi-title-row">
-                                <span class="kpi-title">Удельное элек. сопротивление (УЭС)</span>
+                                <span class="kpi-title">Удельное электрическое сопротивление (УЭС)</span>
                                 <span class="info-btn" data-tooltip="kpiResistivityFormula">?</span>
                             </div>
-                            <span class="kpi-value" id="kpiResistivity">58.4 <small>Ом·мм²/м</small></span>
+                            <span class="kpi-value" id="kpiResistivity">58.4 <small>мкОм·м</small></span>
                             <span class="kpi-status good" id="kpiResistivityStatus">Низкие потери (&lt; 62 по схеме)</span>
                         </div>
                     </div>
